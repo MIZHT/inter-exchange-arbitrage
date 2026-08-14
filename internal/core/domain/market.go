@@ -1,14 +1,12 @@
 package domain
 
-type FilteredMarkets struct {
-	FilteredMarkets map[string]FilteredMarket
-}
+type FilteredPairs map[string]FilteredPair
 
-type FilteredMarket struct {
+type FilteredPair struct {
 	SpotStatus       MarketStatus
 	FutureStatus     MarketStatus
-	DepositNetworks  map[string]NetworkInfo
-	WithdrawNetworks map[string]NetworkInfo
+	DepositNetworks  []NetworkInfo
+	WithdrawNetworks []NetworkInfo
 }
 
 type MarketStatus struct {

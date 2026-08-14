@@ -9,4 +9,5 @@ func main() {
 	cfg := core_config.NewConfigMust()
 	logger := core_logger.NewLoggerMust(cfg.Logger)
 	defer logger.Close()
+
 }
