@@ -15,7 +15,10 @@ type ExchangeRunner struct {
 	logger  *core_logger.Logger
 
 	filteredPairs domain.FilteredPairs
-	mu            sync.Mutex
+	spotCoins     map[string]struct{}
+	futureCoins   map[string]struct{}
+
+	mu sync.Mutex
 }
 
 func NewExchangeRunner(
@@ -26,11 +29,12 @@ func NewExchangeRunner(
 		adapter:       adapter,
 		logger:        logger,
 		filteredPairs: make(domain.FilteredPairs),
+		spotCoins:     make(map[string]struct{}),
+		futureCoins:   make(map[string]struct{}),
 	}
 }
 
 func (r *ExchangeRunner) Sync(ctx context.Context) error {
-
 	var (
 		wg         sync.WaitGroup
 		currencies []domain.Currency
@@ -67,7 +71,7 @@ func (r *ExchangeRunner) Sync(ctx context.Context) error {
 			return err
 		}
 	}
-	r.filteredPairs = r.filterPairs(currencies, markets)
+	r.filterPairs(currencies, markets)
 
 	return nil
 }
@@ -75,9 +79,11 @@ func (r *ExchangeRunner) Sync(ctx context.Context) error {
 func (r *ExchangeRunner) filterPairs(
 	currenciesSlice []domain.Currency,
 	marketsSlice []domain.Market,
-) domain.FilteredPairs {
+) {
 
 	fp := make(domain.FilteredPairs)
+	spotCoins := make(map[string]struct{})
+	futureCoins := make(map[string]struct{})
 
 	marketsMap := collapseMarkets(marketsSlice)
 
@@ -90,6 +96,7 @@ func (r *ExchangeRunner) filterPairs(
 		}
 
 		if market.Futurable {
+			futureCoins[market.Coin] = struct{}{}
 			filteredPair.FutureStatus = domain.MarketStatus{
 				Available:       market.Futurable,
 				FundingRate:     market.FuturesFundingRate,
@@ -97,6 +104,7 @@ func (r *ExchangeRunner) filterPairs(
 			}
 		}
 		if market.Spotable {
+			spotCoins[market.Coin] = struct{}{}
 			filteredPair.SpotStatus = domain.MarketStatus{
 				Available: market.Spotable,
 			}
@@ -121,7 +129,10 @@ func (r *ExchangeRunner) filterPairs(
 		}
 		fp[currency.Name] = filteredPair
 	}
-	return fp
+
+	r.filteredPairs = fp
+	r.futureCoins = futureCoins
+	r.spotCoins = spotCoins
 }
 
 func collapseMarkets(markets []domain.Market) map[string]domain.Market {
@@ -138,6 +149,5 @@ func collapseMarkets(markets []domain.Market) map[string]domain.Market {
 		current.FuturesNextFundingTime = market.FuturesNextFundingTime
 		result[market.Coin] = current
 	}
-
 	return result
 }

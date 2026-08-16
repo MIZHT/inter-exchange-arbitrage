@@ -24,8 +24,8 @@ type ExchangeAdapter interface {
 	// if FuturesNextFundingTime > 0 && (FuturesFundingRate == "")
 	//
 
-	SubscribeOrderBook(context.Context, string) error
-	UnsubscribeOrderBook(context.Context, string) error
+	//SubscribeOrderBook(context.Context, string) error
+	//UnsubscribeOrderBook(context.Context, string) error
 
 	//Start(ctx context.Context) error
 	//Stop(ctx context.Context) error
