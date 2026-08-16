@@ -1,10 +1,8 @@
 package domain
 
 type Currency struct {
-	Name            string
-	DepositEnabled  bool
-	WithdrawEnabled bool
-	Networks        []NetworkInfo
+	Name     string
+	Networks []NetworkInfo
 }
 
 type NetworkInfo struct {
@@ -12,5 +10,5 @@ type NetworkInfo struct {
 	ContractAddress string
 	DepositEnabled  bool
 	WithdrawEnabled bool
-	WithdrawFee     string
+	WithdrawFee     float64
 }
