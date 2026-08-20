@@ -11,7 +11,7 @@ type FilteredPair struct {
 
 type MarketStatus struct {
 	Available       bool
-	FundingRate     string
+	FundingRate     float64
 	NextFundingTime int64
 }
 
@@ -20,6 +20,6 @@ type Market struct {
 	Spotable  bool
 	Futurable bool
 
-	FuturesFundingRate     string
+	FuturesFundingRate     float64
 	FuturesNextFundingTime int64
 }
