@@ -37,7 +37,7 @@ func (ex *Bybit) Name() string {
 }
 
 func (ex *Bybit) FetchCurrencies(ctx context.Context) ([]domain.Currency, error) {
-	currencies, err := bybit_rest.FetchCurrencies(ctx)
+	currencies, err := bybit_rest.FetchCurrencies(ctx, ex.restClient)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (ex *Bybit) FetchCurrencies(ctx context.Context) ([]domain.Currency, error)
 }
 
 func (ex *Bybit) FetchMarkets(ctx context.Context) ([]domain.Market, error) {
-	markets, err := bybit_rest.FetchMarkets(ctx)
+	markets, err := bybit_rest.FetchMarkets(ctx, ex.restClient)
 	if err != nil {
 		return nil, err
 	}

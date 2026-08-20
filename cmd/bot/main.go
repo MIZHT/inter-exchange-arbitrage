@@ -15,6 +15,7 @@ import (
 
 func main() {
 	cfg := core_config.NewConfigMust()
+
 	logger := core_logger.NewLoggerMust(cfg.Logger)
 	defer logger.Close()
 
@@ -35,7 +36,7 @@ func main() {
 		}
 	}
 
-	coordinator := engine.NewCoordinator(ctx, adapters, logger)
+	coordinator := engine.NewCoordinator(ctx, logger, adapters)
 	if err := coordinator.Run(ctx); err != nil {
 		logger.Error("Parser run error", zap.Error(err))
 	}
