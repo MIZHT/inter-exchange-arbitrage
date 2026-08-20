@@ -14,19 +14,20 @@ type Coordinator struct {
 	mu     sync.Mutex
 	ctx    context.Context
 	cancel context.CancelFunc
-	logger core_logger.Logger
+	logger *core_logger.Logger
 
 	runners map[core_config.ExchangeName]*ExchangeRunner
 }
 
 func NewCoordinator(
 	ctx context.Context,
-	adapters map[core_config.ExchangeName]exchange.ExchangeAdapter,
 	logger *core_logger.Logger,
+	adapters map[core_config.ExchangeName]exchange.ExchangeAdapter,
 ) *Coordinator {
 	c := &Coordinator{
-		ctx:    ctx,
-		logger: *logger,
+		ctx:     ctx,
+		logger:  logger,
+		runners: make(map[core_config.ExchangeName]*ExchangeRunner),
 	}
 	for name, ex := range adapters {
 		runner := NewExchangeRunner(ex, logger)
@@ -51,10 +52,8 @@ func (c *Coordinator) Run(ctx context.Context) error {
 			return nil
 		case <-tickerSync.C:
 			c.SyncAll(ctx)
-			return nil
 		case <-tickerCMC.C:
 			c.CMCParse(ctx)
-			return nil
 		}
 	}
 }

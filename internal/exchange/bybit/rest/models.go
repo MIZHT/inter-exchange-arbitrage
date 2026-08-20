@@ -1,1 +1,1 @@
-package bybit_rest
+package rest_bybit
