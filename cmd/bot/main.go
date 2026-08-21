@@ -9,7 +9,7 @@ import (
 	core_logger "github.com/MIZHT/inter-exchange-arbitrage/internal/core/logger"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/engine"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange"
-	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/bybit"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/binance"
 	"go.uber.org/zap"
 )
 
@@ -28,8 +28,8 @@ func main() {
 	adapters := make(map[core_config.ExchangeName]exchange.ExchangeAdapter)
 	for name, exCfg := range cfg.Exchanges {
 		switch name {
-		case core_config.Bybit:
-			adapters[name] = bybit.NewBybit(logger, exCfg)
+		case core_config.Binance:
+			adapters[name] = binance.NewBinance(logger, exCfg)
 
 		default:
 			logger.Warn("no adapter for exchange", zap.String("exchange", string(name)))

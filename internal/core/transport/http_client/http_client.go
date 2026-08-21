@@ -90,7 +90,7 @@ func WithHeader(key, value string) Option {
 // func WithRetry(maxRetries int, baseDelay time.Duration) Option
 // func WithHeader(key, value stirng) Option
 
-func (c *Client) do(ctx context.Context, req *http.Request) (*http.Response, error) {
+func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	for key, val := range c.headers {
 		if req.Header.Get(key) == "" {
 			req.Header.Set(key, val)
@@ -143,7 +143,7 @@ func (c *Client) Get(ctx context.Context, url string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c.do(ctx, req)
+	return c.Do(ctx, req)
 }
 
 func statusCode(resp *http.Response) int {
