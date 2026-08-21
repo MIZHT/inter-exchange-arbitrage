@@ -1,7 +1,7 @@
 package binance_rest
 
 // Spot symbols
-type BinanceSymbol struct {
+type BinanceSpotMarket struct {
 	Symbol               string `json:"symbol"`
 	Status               string `json:"status"`
 	BaseAsset            string `json:"baseAsset"`
@@ -11,20 +11,20 @@ type BinanceSymbol struct {
 
 // Spot exchangeInfo response
 type BinanceExchangeInfo struct {
-	Symbols []BinanceSymbol `json:"symbols"`
+	Symbols []BinanceSpotMarket `json:"symbols"`
 }
 
 // Futures premium index (funding)
-type BinanceFuturesPremiumIndex struct {
+type BinanceFutureMarket struct {
 	Symbol          string `json:"symbol"`
 	LastFundingRate string `json:"lastFundingRate"`
 	NextFundingTime int64  `json:"nextFundingTime"`
 }
 
 // Asset config response (currencies)
-type BinanceAssetConfigsResponse []BinanceAssetConfig
+type BinanceCurrencies []BinanceCurrency
 
-type BinanceAssetConfig struct {
+type BinanceCurrency struct {
 	Coin        string           `json:"coin"`
 	Name        string           `json:"name,omitempty"`
 	NetworkList []BinanceNetwork `json:"networkList"`
