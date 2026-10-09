@@ -2,18 +2,21 @@ package core_logger
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
 
 	core_config "github.com/MIZHT/inter-exchange-arbitrage/internal/core/config"
 	"go.uber.org/zap"
+	"go.uber.org/zap/exp/zapslog"
 	"go.uber.org/zap/zapcore"
 )
 
 type Logger struct {
-	*zap.Logger
+	*slog.Logger
 
+	//zapLogger *zap.Logger
 	file *os.File
 }
 
@@ -33,7 +36,7 @@ func NewLogger(config core_config.Logger) (*Logger, error) {
 		fmt.Sprintf("%s.log", timestamp),
 	)
 
-	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY, 0644)
+	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("open log file: %w", err)
 	}
@@ -49,9 +52,17 @@ func NewLogger(config core_config.Logger) (*Logger, error) {
 	)
 	zapLogger := zap.New(core, zap.AddCaller())
 
+	slogLogger := slog.New(
+		zapslog.NewHandler(
+			zapLogger.Core(),
+			zapslog.WithCaller(true),
+		),
+	)
+
 	return &Logger{
-		Logger: zapLogger,
-		file:   logFile,
+		Logger: slogLogger,
+		//zapLogger: zapLogger,
+		file: logFile,
 	}, nil
 }
 
@@ -65,6 +76,7 @@ func NewLoggerMust(config core_config.Logger) *Logger {
 }
 
 func (l *Logger) Close() {
+	//_ = l.zapLogger.Sync()
 	if err := l.file.Close(); err != nil {
 		fmt.Println("failed ot close application logger:", err)
 	}
