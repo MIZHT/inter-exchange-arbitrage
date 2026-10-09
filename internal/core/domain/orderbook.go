@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"sort"
 	"time"
 )
 
@@ -20,46 +19,47 @@ type BidAsk struct {
 type SpotOrderBook = OrderBook
 type FuturesOrderBook = OrderBook
 
-func NormalizeOrderBook(book *OrderBook) {
-	if book == nil {
-		return
-	}
+// func NormalizeOrderBook(book *OrderBook) {
+// 	if book == nil {
+// 		return
+// 	}
 
-	book.Bids = NormalizeLevels(book.Bids, true)
-	book.Asks = NormalizeLevels(book.Asks, false)
-	//TrimCrossedLevels(book)
-}
+// 	book.Bids = NormalizeLevels(book.Bids, true)
+// 	book.Asks = NormalizeLevels(book.Asks, false)
+// 	//TrimCrossedLevels(book)
+// }
 
-func NormalizeLevels(levels []BidAsk, isBid bool) []BidAsk {
-	if len(levels) == 0 {
-		return nil
-	}
+// func NormalizeLevels(levels []BidAsk, isBid bool) []BidAsk {
+// 	if len(levels) == 0 {
+// 		return nil
+// 	}
 
-	byPrice := make(map[float64]float64, len(levels))
-	for _, level := range levels {
-		if level.Price <= 0 || level.Quantity <= 0 {
-			continue
-		}
-		byPrice[level.Price] = +level.Quantity
-	}
+// 	byPrice := make(map[float64]float64, len(levels))
+// 	for _, level := range levels {
+// 		if level.Price <= 0 || level.Quantity <= 0 {
+// 			continue
+// 		}
+// 		byPrice[level.Price] = +level.Quantity
+// 	}
 
-	normalized := make([]BidAsk, 0, len(byPrice))
-	for price, quantity := range byPrice {
-		normalized = append(normalized, BidAsk{
-			Price:    price,
-			Quantity: quantity,
-		})
-	}
+// 	normalized := make([]BidAsk, 0, len(byPrice))
+// 	for price, quantity := range byPrice {
+// 		normalized = append(normalized, BidAsk{
+// 			Price:    price,
+// 			Quantity: quantity,
+// 		})
+// 	}
 
-	sort.Slice(normalized, func(i, j int) bool {
-		if isBid {
-			return normalized[i].Price > normalized[j].Price
-		}
-		return normalized[i].Price < normalized[j].Price
-	})
+// 	sort.Slice(normalized, func(i, j int) bool {
+// 		if isBid {
+// 			return normalized[i].Price > normalized[j].Price
+// 		}
+// 		return normalized[i].Price < normalized[j].Price
+// 	})
 
-	return normalized
-}
+// 	return normalized
+// }
+//---------------------
 
 // func TrimCrossedLevels(book *OrderBook) {
 // 	if book == nil || len(book.Bids) == 0 || len(book.Asks) == 0 {
@@ -89,3 +89,35 @@ func NormalizeLevels(levels []BidAsk, isBid bool) []BidAsk {
 // 	book.Bids = safeBids
 // 	book.Asks = safeAsks
 // }
+
+func NormalizeOrderBook(book *OrderBook) {
+	NormalizeLevels(book.Asks, false)
+	NormalizeLevels(book.Bids, true)
+}
+
+func NormalizeLevels(levels []BidAsk, isBId bool) {
+	if len(levels) == 0 {
+		return
+	}
+	for level := range levels {
+		_ = level
+	}
+}
+func sortArray(nums []int) []int {
+	arr := make([]int, len(nums))
+	for i, num := range nums {
+		arr[i] = num
+	}
+	for i := 0; i < len(arr); i++ {
+		for j := 0; j < len(arr)-i-1; j++ {
+			if arr[j] > arr[j+1] {
+				arr[j], arr[j+1] = arr[j+1], arr[j]
+			}
+		}
+	}
+	return arr
+}
+
+func add(a int, b int) int {
+	return a + b
+}
