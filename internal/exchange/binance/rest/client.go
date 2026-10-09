@@ -73,7 +73,7 @@ func (c *Client) sign(query string) string {
 
 func decodeJSON(resp *http.Response, dst any) error {
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		body, _ := io.ReadAll(io.Reader(resp.Body))
 		return fmt.Errorf("unexpected status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
