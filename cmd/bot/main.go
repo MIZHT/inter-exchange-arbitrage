@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"os/signal"
 	"syscall"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/engine"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/binance"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -30,14 +30,13 @@ func main() {
 		switch name {
 		case core_config.Binance:
 			adapters[name] = binance.NewBinance(logger, exCfg)
-
 		default:
-			logger.Warn("no adapter for exchange", zap.String("exchange", string(name)))
+			logger.Warn("no adapter for exchange", slog.String("exchange", string(name)))
 		}
 	}
 
 	coordinator := engine.NewCoordinator(ctx, logger, adapters)
 	if err := coordinator.Run(ctx); err != nil {
-		logger.Error("Parser run error", zap.Error(err))
+		logger.Error("Parser run error", slog.Any("error", err))
 	}
 }

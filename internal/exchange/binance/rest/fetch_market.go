@@ -3,12 +3,12 @@ package binance_rest
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/core/domain"
-	"go.uber.org/zap"
 )
 
 func (c *Client) FetchMarkets(ctx context.Context) ([]domain.Market, error) {
@@ -43,7 +43,7 @@ func (c *Client) FetchMarkets(ctx context.Context) ([]domain.Market, error) {
 		return nil, fmt.Errorf("map markets: %w", err)
 	}
 
-	c.logger.Info("Binance FetchMarkets", zap.Int("count", len(markets)))
+	c.logger.Info("Binance FetchMarkets", slog.Int("count", len(markets)))
 	return markets, nil
 }
 

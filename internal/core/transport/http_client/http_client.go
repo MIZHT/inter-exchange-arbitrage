@@ -3,11 +3,10 @@ package http_client
 import (
 	"context"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 // client := httpclient.NewClient(
@@ -22,7 +21,7 @@ import (
 
 type Client struct {
 	httpClient *http.Client
-	logger     *zap.Logger
+	logger     *slog.Logger
 	headers    map[string]string
 	maxRetries int
 	retryDelay time.Duration
@@ -55,7 +54,7 @@ func NewHTTPClient(opts ...Option) *Client {
 	return c
 }
 
-func WithLogger(l *zap.Logger) Option {
+func WithLogger(l *slog.Logger) Option {
 	return func(c *Client) {
 		c.logger = l
 	}
@@ -69,11 +68,11 @@ func WithProxy(proxyURL string) Option {
 		}
 		proxyAddr, err := url.Parse(proxyURL)
 		if err != nil {
-			c.logger.Warn("Invalid proxy URL", zap.String("proxy", proxyURL), zap.Error(err))
+			c.logger.Warn("Invalid proxy URL", slog.String("proxy", proxyURL), slog.Any("error", err))
 		} else {
 			transport := c.httpClient.Transport.(*http.Transport)
 			transport.Proxy = http.ProxyURL(proxyAddr)
-			c.logger.Debug("Using proxy for HTTP client", zap.String("proxy", proxyURL))
+			c.logger.Debug("Using proxy for HTTP client", slog.String("proxy", proxyURL))
 		}
 	}
 }
@@ -116,10 +115,10 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 
 		if c.logger != nil {
 			c.logger.Warn("HTTP request failed",
-				zap.Int("attempt", attempt+1),
-				zap.String("url", req.URL.String()),
-				zap.Error(err),
-				zap.Int("status", statusCode(resp)))
+				slog.Int("attempt", attempt+1),
+				slog.String("url", req.URL.String()),
+				slog.Any("error", err),
+				slog.Int("status", statusCode(resp)))
 		}
 
 		if resp != nil {
