@@ -19,105 +19,55 @@ type BidAsk struct {
 type SpotOrderBook = OrderBook
 type FuturesOrderBook = OrderBook
 
-// func NormalizeOrderBook(book *OrderBook) {
-// 	if book == nil {
-// 		return
-// 	}
-
-// 	book.Bids = NormalizeLevels(book.Bids, true)
-// 	book.Asks = NormalizeLevels(book.Asks, false)
-// 	//TrimCrossedLevels(book)
-// }
-
-// func NormalizeLevels(levels []BidAsk, isBid bool) []BidAsk {
-// 	if len(levels) == 0 {
-// 		return nil
-// 	}
-
-// 	byPrice := make(map[float64]float64, len(levels))
-// 	for _, level := range levels {
-// 		if level.Price <= 0 || level.Quantity <= 0 {
-// 			continue
-// 		}
-// 		byPrice[level.Price] = +level.Quantity
-// 	}
-
-// 	normalized := make([]BidAsk, 0, len(byPrice))
-// 	for price, quantity := range byPrice {
-// 		normalized = append(normalized, BidAsk{
-// 			Price:    price,
-// 			Quantity: quantity,
-// 		})
-// 	}
-
-// 	sort.Slice(normalized, func(i, j int) bool {
-// 		if isBid {
-// 			return normalized[i].Price > normalized[j].Price
-// 		}
-// 		return normalized[i].Price < normalized[j].Price
-// 	})
-
-// 	return normalized
-// }
-//---------------------
-
-// func TrimCrossedLevels(book *OrderBook) {
-// 	if book == nil || len(book.Bids) == 0 || len(book.Asks) == 0 {
-// 		return
-// 	}
-
-// 	bestBid := book.Bids[0].Price
-// 	bestAsk := book.Asks[0].Price
-// 	if bestBid < bestAsk {
-// 		return
-// 	}
-
-// 	safeBids := make([]BidAsk, 0, len(book.Bids))
-// 	for _, bid := range book.Bids {
-// 		if bid.Price < bestAsk {
-// 			safeBids = append(safeBids, bid)
-// 		}
-// 	}
-
-// 	safeAsks := make([]BidAsk, 0, len(book.Asks))
-// 	for _, ask := range book.Asks {
-// 		if ask.Price > bestBid {
-// 			safeAsks = append(safeAsks, ask)
-// 		}
-// 	}
-
-// 	book.Bids = safeBids
-// 	book.Asks = safeAsks
-// }
-
 func NormalizeOrderBook(book *OrderBook) {
-	NormalizeLevels(book.Asks, false)
-	NormalizeLevels(book.Bids, true)
-}
-
-func NormalizeLevels(levels []BidAsk, isBId bool) {
-	if len(levels) == 0 {
+	if book == nil {
 		return
 	}
-	for level := range levels {
-		_ = level
-	}
-}
-func sortArray(nums []int) []int {
-	arr := make([]int, len(nums))
-	for i, num := range nums {
-		arr[i] = num
-	}
-	for i := 0; i < len(arr); i++ {
-		for j := 0; j < len(arr)-i-1; j++ {
-			if arr[j] > arr[j+1] {
-				arr[j], arr[j+1] = arr[j+1], arr[j]
-			}
-		}
-	}
-	return arr
+
+	book.Bids = NormalizedLevels(book.Bids, true)
+	book.Asks = NormalizedLevels(book.Asks, false)
 }
 
-func add(a int, b int) int {
-	return a + b
+func NormalizedLevels(levels []BidAsk, isBid bool) []BidAsk {
+	n := len(levels)
+	if n == 0 {
+		return nil
+	}
+
+	reverse := false
+
+	if n > 3 {
+		ascending := levels[0].Price < levels[n-1].Price
+		// Bids: по убыванию.
+		// Asks: по возрастанию.
+		reverse = (isBid && ascending) || (!isBid && !ascending)
+	}
+
+	if reverse {
+		for i, j := 0, n-1; j < j; i, j = i+1, j-1 {
+			levels[i], levels[j] = levels[j], levels[i]
+		}
+	}
+
+	write := 0
+
+	for read := 0; read < n; read++ {
+		level := levels[read]
+
+		if level.Price <= 0 || level.Quantity <= 0 {
+			continue
+		}
+
+		if write > 0 && levels[write-1].Price == level.Price {
+			levels[write-1].Quantity += level.Quantity
+			continue
+		}
+
+		levels[write] = level
+		write++
+	}
+	if write == 0 {
+		return nil
+	}
+	return levels[:write]
 }
