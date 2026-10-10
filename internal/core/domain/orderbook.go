@@ -24,11 +24,11 @@ func NormalizeOrderBook(book *OrderBook) {
 		return
 	}
 
-	book.Bids = NormalizedLevels(book.Bids, true)
-	book.Asks = NormalizedLevels(book.Asks, false)
+	book.Bids = NormalizeLevels(book.Bids, true)
+	book.Asks = NormalizeLevels(book.Asks, false)
 }
 
-func NormalizedLevels(levels []BidAsk, isBid bool) []BidAsk {
+func NormalizeLevels(levels []BidAsk, isBid bool) []BidAsk {
 	n := len(levels)
 	if n == 0 {
 		return nil
@@ -44,7 +44,7 @@ func NormalizedLevels(levels []BidAsk, isBid bool) []BidAsk {
 	}
 
 	if reverse {
-		for i, j := 0, n-1; j < j; i, j = i+1, j-1 {
+		for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
 			levels[i], levels[j] = levels[j], levels[i]
 		}
 	}
