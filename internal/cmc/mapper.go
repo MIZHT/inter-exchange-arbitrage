@@ -2,6 +2,8 @@ package cmc
 
 import (
 	"fmt"
+
+	core_config "github.com/MIZHT/inter-exchange-arbitrage/internal/core/config"
 )
 
 func listIndex(index CmcIndexResponse) ([]int, error) {
@@ -31,8 +33,8 @@ func MapTicker(
 	coinID int,
 	pairs []MarketPair,
 ) TickerOutput {
-	spot := make(map[string]struct{}, 3)
-	futures := make(map[string]struct{}, 3)
+	spot := make(map[core_config.ExchangeName]struct{}, 3)
+	futures := make(map[core_config.ExchangeName]struct{}, 3)
 
 	for _, pair := range pairs {
 		exchangeName := getName(pair.ExchangeID)
@@ -55,41 +57,41 @@ func MapTicker(
 	}
 }
 
-func getName(id int) string {
+func getName(id int) core_config.ExchangeName {
 	switch id {
 	case 270:
-		return "binance"
+		return core_config.Binance
 	case 311:
-		return "kucoin"
+		return core_config.Kucoin
 	case 544:
-		return "mexc"
+		return core_config.Mexc
 	case 302:
-		return "gateio"
+		return core_config.Gateio
 	case 521:
-		return "bybit"
+		return core_config.Bybit
 	case 294:
-		return "okx"
+		return core_config.Okx
 	case 513:
-		return "bitget"
+		return core_config.Bitget
 	case 1064:
-		return "bingx"
+		return core_config.Bingx
 	case 525:
-		return "xt"
+		return core_config.Xt
 	default:
 		return ""
 	}
 }
 
-func groupSet(values map[string]struct{}) [][]string {
+func groupSet(values map[core_config.ExchangeName]struct{}) [][]core_config.ExchangeName {
 	if len(values) == 0 {
 		return nil
 	}
 
-	group := make([]string, 0, len(values))
+	group := make([]core_config.ExchangeName, 0, len(values))
 	for value := range values {
 		group = append(group, value)
 	}
-	return [][]string{group}
+	return [][]core_config.ExchangeName{group}
 }
 
 func makeSnapshot(symbol string, mapTicker TickerOutput, Snapshot Snapshot) {
