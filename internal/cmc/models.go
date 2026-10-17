@@ -1,6 +1,7 @@
 package cmc
 
 import (
+	"sync"
 	"sync/atomic"
 
 	core_config "github.com/MIZHT/inter-exchange-arbitrage/internal/core/config"
@@ -36,5 +37,7 @@ type TickerOutput struct {
 }
 
 type Store struct {
-	cur atomic.Pointer[Snapshot]
+	cur  atomic.Pointer[Snapshot]
+	mu   sync.Mutex
+	path string
 }
