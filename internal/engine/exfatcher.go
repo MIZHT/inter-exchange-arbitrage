@@ -2,7 +2,7 @@ package engine
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"sync"
 	"sync/atomic"
 
@@ -13,14 +13,12 @@ import (
 )
 
 type ExchangeRunner struct {
-	Exchange core_config.ExchangeName
+	exchangeName core_config.ExchangeName
 
 	Adapter exchange.ExchangeAdapter
 	logger  *core_logger.Logger
 
 	snapshot atomic.Pointer[ExchangeSnapshot]
-
-	mu sync.Mutex
 }
 
 type ExchangeSnapshot struct {
@@ -39,21 +37,21 @@ func NewExchangeRunner(
 	}
 }
 
-func (r *ExchangeRunner) RunExFetch(ctx context.Context) error {
+func (r *ExchangeRunner) RunExFetch(ctx context.Context) {
 	var (
-		wg         sync.WaitGroup
-		currencies []domain.Currency
-		markets    []domain.Market
-		errs       = make(chan error, 2)
+		wg            sync.WaitGroup
+		currencies    []domain.Currency
+		markets       []domain.Market
+		currenciesErr error
+		marketsErr    error
 	)
-	exchangeName := r.Adapter.Name()
 
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
 		c, err := r.Adapter.FetchCurrencies(ctx)
 		if err != nil {
-			errs <- fmt.Errorf("ex: %s: fetch currencies: %w", exchangeName, err)
+			currenciesErr = err
 			return
 		}
 		currencies = c
@@ -62,23 +60,42 @@ func (r *ExchangeRunner) RunExFetch(ctx context.Context) error {
 		defer wg.Done()
 		m, err := r.Adapter.FetchMarkets(ctx)
 		if err != nil {
-			errs <- fmt.Errorf("ex: %s: fetch markets: %w", exchangeName, err)
+			marketsErr = err
 			return
 		}
 		markets = m
 	}()
 
 	wg.Wait()
-	close(errs)
-
-	for err := range errs {
-		if err != nil {
-			return err
+	if currenciesErr != nil || marketsErr != nil {
+		if currenciesErr != nil {
+			r.logFetchFailure(ctx, r.exchangeName, "currencies", currenciesErr)
 		}
+		if marketsErr != nil {
+			r.logFetchFailure(ctx, r.exchangeName, "markets", marketsErr)
+		}
+		return
 	}
-	r.filterPairs(currencies, markets)
 
-	return nil
+	r.filterPairs(currencies, markets)
+}
+
+func (r *ExchangeRunner) logFetchFailure(
+	ctx context.Context,
+	exchange core_config.ExchangeName,
+	dataType string,
+	err error,
+) {
+	attrs := []any{
+		slog.String("exchange", string(exchange)),
+		slog.String("data_type", dataType),
+		slog.Any("error", err),
+	}
+	if ctx.Err() != nil {
+		r.logger.Debug("exchange fetch interrupted; keeping previous snapshot", attrs...)
+		return
+	}
+	r.logger.Warn("exchange fetch failed; keeping previous snapshot", attrs...)
 }
 
 func (r *ExchangeRunner) filterPairs(
