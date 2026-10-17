@@ -2,7 +2,6 @@ package engine
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -11,7 +10,6 @@ import (
 	core_config "github.com/MIZHT/inter-exchange-arbitrage/internal/core/config"
 	core_logger "github.com/MIZHT/inter-exchange-arbitrage/internal/core/logger"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange"
-	"golang.org/x/sync/errgroup"
 )
 
 type Coordinator struct {
@@ -113,23 +111,21 @@ func (c *Coordinator) Run(ctx context.Context) error {
 	}
 }
 
-func (c *Coordinator) ExFetch(ctx context.Context) error {
+func (c *Coordinator) ExFetch(ctx context.Context) {
 	c.logger.Debug("start fetch exchanges")
 
 	var wg sync.WaitGroup
-	g, ctx := errgroup.WithContext(ctx)
 	for exchangeName, runner := range c.runners {
-		c.logger.Info("Add exchange runner", slog.String("exchangeName:", string(exchangeName)))
+		runner := runner
+		exchangeName := exchangeName
+		c.logger.Debug("start exchange fetch", slog.String("exchange", string(exchangeName)))
 		wg.Add(1)
-		g.Go(func() error {
+		go func() {
 			defer wg.Done()
-			if err := runner.RunExFetch(ctx); err != nil {
-				return fmt.Errorf("fetch exchange %q: %w", exchangeName, err)
-			}
-			return nil
-		})
+			runner.RunExFetch(ctx)
+		}()
 	}
-	return g.Wait()
+	wg.Wait()
 }
 
 func (c *Coordinator) CMCParse(ctx context.Context) {
