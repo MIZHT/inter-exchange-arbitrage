@@ -12,9 +12,6 @@ import (
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/core/transport/http_client"
 )
 
-// добавить прокси
-// блокировка изменения snapshot через стакан
-
 func RunCmc(
 	ctx context.Context,
 	log *core_logger.Logger,
@@ -97,8 +94,6 @@ func RunCmc(
 
 	wg.Wait()
 
-	store.publish(&snapshot)
-
 	log.Info("cmc snapshot update",
 		slog.Int("total coins", len(symbolsList)),
 		slog.Int("success", success),
@@ -106,21 +101,17 @@ func RunCmc(
 		slog.Int("snapshot_symbols", len(snapshot)),
 		slog.Duration("duration", time.Since(startedAt)),
 	)
+
 	if success < 1 {
 		return errors.New("bad cmc snapshot")
+	}
+
+	if err := store.publish(&snapshot); err != nil {
+		log.Error("failed to persist CMC snapshot; using the fresh in-memory snapshot",
+			slog.Any("error", err),
+		)
 	}
 
 	return nil
 
 }
-
-func NewStore() *Store {
-	s := &Store{}
-	empty := Snapshot{}
-	s.cur.Store(&empty) // чтобы Get никогда не вернул nil
-	return s
-}
-
-func (s *Store) Get() *Snapshot { return s.cur.Load() }
-
-func (s *Store) publish(snap *Snapshot) { s.cur.Store(snap) }

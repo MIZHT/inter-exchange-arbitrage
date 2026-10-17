@@ -56,7 +56,6 @@ func (c *Coordinator) RunMatchFind(
 	for coin, cmcInfo := range *input.CMC {
 		match := &ContractMatch{Coin: coin}
 
-		// Индекс биржи в match.Exchanges, чтобы не добавлять её повторно.
 		exchangeIndexes := make(map[core_config.ExchangeName]int)
 		matched := false
 
@@ -181,9 +180,6 @@ func (c *Coordinator) RunMatchFind(
 
 				for j := i + 1; j < len(futuresGroup); j++ {
 					ex2 := futuresGroup[j]
-					if ex1 == ex2 {
-						continue
-					}
 
 					exchange2 := input.Exchanges[ex2]
 					if exchange2 == nil {
@@ -199,11 +195,16 @@ func (c *Coordinator) RunMatchFind(
 					addMatchedExchange(match, exchangeIndexes, ex1, exInfo1)
 					addMatchedExchange(match, exchangeIndexes, ex2, exInfo2)
 
-					match.Pairs = append(match.Pairs, ExchangePair{
-						WithdrawExchange:   string(ex1),
-						DepositExchange:    string(ex2),
-						AvailableDirection: "futures_futures",
-					})
+					match.Pairs = append(match.Pairs,
+						ExchangePair{
+							WithdrawExchange:   string(ex1),
+							DepositExchange:    string(ex2),
+							AvailableDirection: "futures_futures",
+						}, ExchangePair{
+							WithdrawExchange:   string(ex2),
+							DepositExchange:    string(ex1),
+							AvailableDirection: "futures_futures",
+						})
 
 					addCoin(futuresSets, ex1, coin)
 					addCoin(futuresSets, ex2, coin)
@@ -318,7 +319,7 @@ func setsToSlices(
 func NewMatches() *MatchStore {
 	s := &MatchStore{}
 	empty := MatchResult{}
-	s.cur.Store(&empty) // чтобы Get никогда не вернул nil
+	s.cur.Store(&empty)
 	return s
 }
 

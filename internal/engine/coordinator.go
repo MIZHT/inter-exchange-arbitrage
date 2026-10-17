@@ -32,11 +32,24 @@ func NewCoordinator(
 	logger *core_logger.Logger,
 	adapters map[core_config.ExchangeName]exchange.ExchangeAdapter,
 ) *Coordinator {
+	cmcStore, err := cmc.NewStore(cmc.DefaultSnapshotPath)
+	if err != nil {
+		logger.Warn(
+			"could not load persisted CMC snapshot; starting with an empty snapshot",
+			slog.Any("error", err),
+		)
+	} else if snapshot := cmcStore.Get(); snapshot != nil && len(*snapshot) > 0 {
+		logger.Info(
+			"loaded persisted CMC snapshot",
+			slog.Int("symbols", len(*snapshot)),
+		)
+	}
+
 	c := &Coordinator{
 		ctx:          ctx,
 		logger:       logger,
 		runners:      make(map[core_config.ExchangeName]*ExchangeRunner),
-		cmcStore:     cmc.NewStore(),
+		cmcStore:     cmcStore,
 		matcherStore: NewMatches(),
 	}
 	for name, ex := range adapters {
@@ -93,7 +106,7 @@ func (c *Coordinator) Run(ctx context.Context) error {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				go c.CMCParse(c.ctx)
+				c.CMCParse(c.ctx)
 
 			}()
 		}
@@ -119,13 +132,16 @@ func (c *Coordinator) ExFetch(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (c *Coordinator) CMCParse(ctx context.Context) error {
+func (c *Coordinator) CMCParse(ctx context.Context) {
 	c.logger.Debug("start cmc")
 
 	if err := cmc.RunCmc(ctx, c.logger, c.proxies, c.cmcStore); err != nil {
-		return fmt.Errorf("parse CMC data: %w", err)
+		c.logger.Warn(
+			"CMC refresh failed; keeping the last available snapshot",
+			slog.Any("error", err),
+		)
+		return
 	}
-	return nil
 }
 
 func (c *Coordinator) MatchFind() {
