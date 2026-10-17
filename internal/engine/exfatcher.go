@@ -4,21 +4,29 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
+	core_config "github.com/MIZHT/inter-exchange-arbitrage/internal/core/config"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/core/domain"
 	core_logger "github.com/MIZHT/inter-exchange-arbitrage/internal/core/logger"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange"
 )
 
 type ExchangeRunner struct {
-	adapter exchange.ExchangeAdapter
+	Exchange core_config.ExchangeName
+
+	Adapter exchange.ExchangeAdapter
 	logger  *core_logger.Logger
 
-	filteredPairs domain.FilteredPairs
-	spotCoins     map[string]struct{}
-	futureCoins   map[string]struct{}
+	snapshot atomic.Pointer[ExchangeSnapshot]
 
 	mu sync.Mutex
+}
+
+type ExchangeSnapshot struct {
+	FilteredPairs domain.FilteredPairs
+	SpotCoins     map[string]struct{}
+	FutureCoins   map[string]struct{}
 }
 
 func NewExchangeRunner(
@@ -26,27 +34,24 @@ func NewExchangeRunner(
 	logger *core_logger.Logger,
 ) *ExchangeRunner {
 	return &ExchangeRunner{
-		adapter:       adapter,
-		logger:        logger,
-		filteredPairs: make(domain.FilteredPairs),
-		spotCoins:     make(map[string]struct{}),
-		futureCoins:   make(map[string]struct{}),
+		Adapter: adapter,
+		logger:  logger,
 	}
 }
 
-func (r *ExchangeRunner) Sync(ctx context.Context) error {
+func (r *ExchangeRunner) RunExFetch(ctx context.Context) error {
 	var (
 		wg         sync.WaitGroup
 		currencies []domain.Currency
 		markets    []domain.Market
 		errs       = make(chan error, 2)
 	)
-	exchangeName := r.adapter.Name()
+	exchangeName := r.Adapter.Name()
 
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		c, err := r.adapter.FetchCurrencies(ctx)
+		c, err := r.Adapter.FetchCurrencies(ctx)
 		if err != nil {
 			errs <- fmt.Errorf("ex: %s: fetch currencies: %w", exchangeName, err)
 			return
@@ -55,7 +60,7 @@ func (r *ExchangeRunner) Sync(ctx context.Context) error {
 	}()
 	go func() {
 		defer wg.Done()
-		m, err := r.adapter.FetchMarkets(ctx)
+		m, err := r.Adapter.FetchMarkets(ctx)
 		if err != nil {
 			errs <- fmt.Errorf("ex: %s: fetch markets: %w", exchangeName, err)
 			return
@@ -130,9 +135,12 @@ func (r *ExchangeRunner) filterPairs(
 		fp[currency.Name] = filteredPair
 	}
 
-	r.filteredPairs = fp
-	r.futureCoins = futureCoins
-	r.spotCoins = spotCoins
+	r.snapshot.Store(&ExchangeSnapshot{
+		FilteredPairs: fp,
+		SpotCoins:     spotCoins,
+		FutureCoins:   futureCoins,
+	})
+
 }
 
 func collapseMarkets(markets []domain.Market) map[string]domain.Market {

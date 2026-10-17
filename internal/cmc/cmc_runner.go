@@ -2,9 +2,11 @@ package cmc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	core_logger "github.com/MIZHT/inter-exchange-arbitrage/internal/core/logger"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/core/transport/http_client"
@@ -22,6 +24,7 @@ func RunCmc(
 	if len(proxies) < 1 {
 		return fmt.Errorf("no proxies for cmc")
 	}
+	startedAt := time.Now()
 
 	symbolsList, err := FetchIndex(ctx, http_client.NewHTTPClient())
 	if err != nil {
@@ -100,7 +103,12 @@ func RunCmc(
 		slog.Int("total coins", len(symbolsList)),
 		slog.Int("success", success),
 		slog.Int("failed", failed),
-		slog.Int("snapshot_symbols", len(snapshot)))
+		slog.Int("snapshot_symbols", len(snapshot)),
+		slog.Duration("duration", time.Since(startedAt)),
+	)
+	if success < 1 {
+		return errors.New("bad cmc snapshot")
+	}
 
 	return nil
 

@@ -2,6 +2,8 @@ package cmc
 
 import (
 	"sync/atomic"
+
+	core_config "github.com/MIZHT/inter-exchange-arbitrage/internal/core/config"
 )
 
 type CmcIndexResponse struct {
@@ -10,31 +12,27 @@ type CmcIndexResponse struct {
 
 type SymbolMap map[int]string
 
-// Ответ API
 type MarketPairsResponse struct {
 	Data struct {
 		MarketPairs []MarketPair `json:"marketPairs"`
 	} `json:"data"`
 }
 
-// Промежуточная структура для marketPair
 type MarketPair struct {
 	ExchangeID int    `json:"exchangeId"`
 	Category   string `json:"category"`
 	BaseSymbol string `json:"baseSymbol"`
 }
 
-// Карта: symbol -> TickerOutput
 type Snapshot map[string]TickerOutput
 
-// Вывод для одного тикера
 type TickerOutput struct {
-	Symbol  string     `json:"symbol"`
-	CoinID  int        `json:"coin_id"`
-	Name    string     `json:"name"`
-	Spot    [][]string `json:"spot"`    // Группы бирж для спота
-	Futures [][]string `json:"futures"` // Группы бирж для фьючерсов
-	Errors  []string   `json:"errors,omitempty"`
+	Symbol  string                       `json:"symbol"`
+	CoinID  int                          `json:"coin_id"`
+	Name    string                       `json:"name"`
+	Spot    [][]core_config.ExchangeName `json:"spot"`    // Группы бирж для спота
+	Futures [][]core_config.ExchangeName `json:"futures"` // Группы бирж для фьючерсов
+	Errors  []string                     `json:"errors,omitempty"`
 }
 
 type Store struct {
