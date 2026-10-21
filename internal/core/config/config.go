@@ -1,6 +1,7 @@
 package core_config
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -11,6 +12,7 @@ import (
 type Config struct {
 	Logger    Logger
 	Exchanges map[ExchangeName]Exchange
+	Proxies   []string
 }
 
 func NewConfig() (*Config, error) {
@@ -36,6 +38,12 @@ func NewConfig() (*Config, error) {
 		cfg.Exchanges[ExchangeName(strings.ToLower(exchangeName))] = exchange
 	}
 
+	var err error
+	cfg.Proxies, err = readProxies()
+	if err != nil {
+		return nil, fmt.Errorf("get proxy list: %w", err)
+	}
+
 	return cfg, nil
 }
 
@@ -46,4 +54,34 @@ func NewConfigMust() *Config {
 		panic(err)
 	}
 	return config
+}
+
+func readProxies() ([]string, error) {
+	file, err := os.Open("proxies.txt")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer file.Close()
+
+	var proxies []string
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		proxies = append(proxies, line)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return proxies, nil
 }

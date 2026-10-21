@@ -21,6 +21,7 @@ type Binance struct {
 func NewBinance(
 	log *core_logger.Logger,
 	exCfg core_config.Exchange,
+	proxy string,
 	//wsManager *websocket.Manager,
 ) *Binance {
 	httpClient := http_client.NewHTTPClient(
@@ -33,10 +34,6 @@ func NewBinance(
 		rest:  binance_rest.NewClient(httpClient, log, exCfg),
 		//wsManager:  wsManager,
 	}
-}
-
-func (ex *Binance) Name() string {
-	return string(core_config.Binance)
 }
 
 func (ex *Binance) FetchCurrencies(ctx context.Context) ([]domain.Currency, error) {

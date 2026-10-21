@@ -11,6 +11,16 @@ import (
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/engine"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/binance"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/bingx"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/bitget"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/bitmart"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/bybit"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/coinex"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/gateio"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/kucoin"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/mexc"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/okx"
+	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange/xt"
 )
 
 func main() {
@@ -26,10 +36,36 @@ func main() {
 	defer cancel()
 
 	adapters := make(map[core_config.ExchangeName]exchange.ExchangeAdapter)
+	proxy := ""
+	if len(cfg.Proxies) > 1 {
+		proxy = cfg.Proxies[1]
+	} else if len(cfg.Proxies) == 1 {
+		proxy = cfg.Proxies[0]
+	}
 	for name, exCfg := range cfg.Exchanges {
 		switch name {
 		case core_config.Binance:
-			adapters[name] = binance.NewBinance(logger, exCfg)
+			adapters[name] = binance.NewBinance(logger, exCfg, proxy)
+		case core_config.Bitget:
+			adapters[name] = bitget.NewBitget(logger, exCfg, proxy)
+		case core_config.Bitmart:
+			adapters[name] = bitmart.NewBitmart(logger, exCfg, proxy)
+		case core_config.Bingx:
+			adapters[name] = bingx.NewBingx(logger, exCfg, proxy)
+		case core_config.Bybit:
+			adapters[name] = bybit.NewBybit(logger, exCfg, proxy)
+		case core_config.Coinex:
+			adapters[name] = coinex.NewCoinEx(logger, exCfg, proxy)
+		case core_config.Gateio:
+			adapters[name] = gateio.NewGateIO(logger, exCfg, proxy)
+		case core_config.Kucoin:
+			adapters[name] = kucoin.NewKuCoin(logger, exCfg, proxy)
+		case core_config.Mexc:
+			adapters[name] = mexc.NewMEXC(logger, exCfg, proxy)
+		case core_config.Okx:
+			adapters[name] = okx.NewOKX(logger, exCfg, proxy)
+		case core_config.Xt:
+			adapters[name] = xt.NewXT(logger, exCfg, proxy)
 		default:
 			logger.Warn("no adapter for exchange", slog.String("exchange", string(name)))
 		}

@@ -7,8 +7,6 @@ import (
 )
 
 type ExchangeAdapter interface {
-	Name() string
-
 	FetchCurrencies(context.Context) ([]domain.Currency, error)
 	// need:
 	// 0. Name without "/USDT" and CapsLock
