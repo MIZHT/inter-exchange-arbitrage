@@ -12,6 +12,11 @@ import (
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/exchange"
 )
 
+type MatchInput struct {
+	Exchanges map[core_config.ExchangeName]*ExchangeSnapshot
+	CMC       *cmc.Snapshot
+}
+
 type Coordinator struct {
 	mu      sync.Mutex
 	ctx     context.Context
@@ -51,15 +56,10 @@ func NewCoordinator(
 		matcherStore: NewMatches(),
 	}
 	for name, ex := range adapters {
-		c.runners[name] = NewExchangeRunner(ex, logger)
+		c.runners[name] = NewExchangeRunner(ex, name, logger)
 
 	}
 	return c
-}
-
-type MatchInput struct {
-	Exchanges map[core_config.ExchangeName]*ExchangeSnapshot
-	CMC       *cmc.Snapshot
 }
 
 func (c *Coordinator) Run(ctx context.Context) error {
@@ -88,6 +88,7 @@ func (c *Coordinator) Run(ctx context.Context) error {
 
 	c.MatchFind()
 
+	//c.FetchOrderbook()
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -155,3 +156,7 @@ func (c *Coordinator) MatchFind() {
 
 	c.RunMatchFind(input)
 }
+
+// func(c *Coordinator) FetchOrderbook() {
+// 	SnapOrderbook:= make(map[core_config.ExchangeName]map[string]domain.OrderBook)
+// }

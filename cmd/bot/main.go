@@ -37,9 +37,7 @@ func main() {
 
 	adapters := make(map[core_config.ExchangeName]exchange.ExchangeAdapter)
 	proxy := ""
-	if len(cfg.Proxies) > 1 {
-		proxy = cfg.Proxies[1]
-	} else if len(cfg.Proxies) == 1 {
+	if len(cfg.Proxies) > 0 {
 		proxy = cfg.Proxies[0]
 	}
 	for name, exCfg := range cfg.Exchanges {

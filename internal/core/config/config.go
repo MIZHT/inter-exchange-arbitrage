@@ -2,10 +2,12 @@ package core_config
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -18,6 +20,10 @@ type Config struct {
 func NewConfig() (*Config, error) {
 	cfg := &Config{
 		Exchanges: make(map[ExchangeName]Exchange),
+	}
+
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("load .env file: %w", err)
 	}
 
 	if err := loggerConfig(&cfg.Logger); err != nil {
@@ -57,11 +63,8 @@ func NewConfigMust() *Config {
 }
 
 func readProxies() ([]string, error) {
-	file, err := os.Open("proxies.txt")
+	file, err := os.OpenFile("proxies.txt", os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
 	defer file.Close()

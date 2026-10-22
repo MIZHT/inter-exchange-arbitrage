@@ -3,6 +3,7 @@ module github.com/MIZHT/inter-exchange-arbitrage
 go 1.26.0
 
 require (
+	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	go.uber.org/zap v1.28.0
 	go.uber.org/zap/exp v0.3.0
