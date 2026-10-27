@@ -2,59 +2,28 @@ package engine
 
 import (
 	"log/slog"
-	"sync/atomic"
 	"time"
 
 	core_config "github.com/MIZHT/inter-exchange-arbitrage/internal/core/config"
 	"github.com/MIZHT/inter-exchange-arbitrage/internal/core/domain"
 )
 
-type MatchStore struct {
-	cur atomic.Pointer[MatchResult]
-}
-
-type MatchResult struct {
-	Spot    map[core_config.ExchangeName][]string
-	Futures map[core_config.ExchangeName][]string
-	Matches map[string]*ContractMatch
-}
-
-type ContractMatch struct {
-	Coin      string            `json:"coin"`
-	Exchanges []MatchedExchange `json:"exchanges"`
-	Pairs     []ExchangePair    `json:"pairs"`
-}
-
-type MatchedExchange struct {
-	Name                   string  `json:"name"`
-	FuturesFundingRate     float64 `json:"futures_funding_rate,omitempty"`
-	FuturesNextFundingTime int64   `json:"futures_next_funding_time,omitempty"`
-}
-
-type ExchangePair struct {
-	WithdrawExchange   string  `json:"withdraw_exchange"`
-	DepositExchange    string  `json:"deposit_exchange"`
-	NetworkName        string  `json:"network_name,omitempty"`
-	WithdrawFee        float64 `json:"withdraw_fee,omitempty"`
-	AvailableDirection string  `json:"available_direction"`
-}
-
 func (c *Coordinator) RunMatchFind(
 	input MatchInput,
 ) {
 	startedAt := time.Now()
 
-	result := MatchResult{
-		Spot:    make(map[core_config.ExchangeName][]string),
-		Futures: make(map[core_config.ExchangeName][]string),
-		Matches: make(map[string]*ContractMatch),
+	result := domain.MatchResult{
+		Spot:    make(map[core_config.ExchangeName]map[string]struct{}),
+		Futures: make(map[core_config.ExchangeName]map[string]struct{}),
+		Matches: make(map[string]*domain.ContractMatch),
 	}
 
 	spotSets := make(map[core_config.ExchangeName]map[string]struct{})
 	futuresSets := make(map[core_config.ExchangeName]map[string]struct{})
 
 	for coin, cmcInfo := range *input.CMC {
-		match := &ContractMatch{Coin: coin}
+		match := &domain.ContractMatch{Coin: coin}
 
 		exchangeIndexes := make(map[core_config.ExchangeName]int)
 		matched := false
@@ -151,7 +120,7 @@ func (c *Coordinator) RunMatchFind(
 					addMatchedExchange(match, exchangeIndexes, spotEx, spotInfo)
 					addMatchedExchange(match, exchangeIndexes, futuresEx, futuresInfo)
 
-					match.Pairs = append(match.Pairs, ExchangePair{
+					match.Pairs = append(match.Pairs, domain.ExchangePair{
 						WithdrawExchange:   string(spotEx),
 						DepositExchange:    string(futuresEx),
 						AvailableDirection: "spot_futures",
@@ -196,11 +165,11 @@ func (c *Coordinator) RunMatchFind(
 					addMatchedExchange(match, exchangeIndexes, ex2, exInfo2)
 
 					match.Pairs = append(match.Pairs,
-						ExchangePair{
+						domain.ExchangePair{
 							WithdrawExchange:   string(ex1),
 							DepositExchange:    string(ex2),
 							AvailableDirection: "futures_futures",
-						}, ExchangePair{
+						}, domain.ExchangePair{
 							WithdrawExchange:   string(ex2),
 							DepositExchange:    string(ex1),
 							AvailableDirection: "futures_futures",
@@ -216,11 +185,9 @@ func (c *Coordinator) RunMatchFind(
 			result.Matches[coin] = match
 		}
 	}
-
-	result.Spot = setsToSlices(spotSets)
-	result.Futures = setsToSlices(futuresSets)
-
-	c.matcherStore.publish(&result)
+	result.Spot = spotSets
+	result.Futures = futuresSets
+	c.matcherStore.Publish(&result)
 
 	c.logger.Info(
 		"Match completed",
@@ -236,8 +203,8 @@ func findSpotRoutes(
 	depositExchange core_config.ExchangeName,
 	withdrawPair domain.FilteredPair,
 	depositPair domain.FilteredPair,
-) []ExchangePair {
-	var routes []ExchangePair
+) []domain.ExchangePair {
+	var routes []domain.ExchangePair
 
 	for _, withdrawNetwork := range withdrawPair.WithdrawNetworks {
 		for _, depositNetwork := range depositPair.DepositNetworks {
@@ -246,7 +213,7 @@ func findSpotRoutes(
 				continue
 			}
 
-			routes = append(routes, ExchangePair{
+			routes = append(routes, domain.ExchangePair{
 				WithdrawExchange:   string(withdrawExchange),
 				DepositExchange:    string(depositExchange),
 				NetworkName:        withdrawNetwork.Name,
@@ -260,7 +227,7 @@ func findSpotRoutes(
 }
 
 func addMatchedExchange(
-	match *ContractMatch,
+	match *domain.ContractMatch,
 	indexes map[core_config.ExchangeName]int,
 	exchangeName core_config.ExchangeName,
 	pair domain.FilteredPair,
@@ -270,7 +237,7 @@ func addMatchedExchange(
 		return
 	}
 
-	exchange := MatchedExchange{
+	exchange := domain.MatchedExchange{
 		Name: string(exchangeName),
 	}
 	updateFunding(&exchange, pair)
@@ -280,7 +247,7 @@ func addMatchedExchange(
 }
 
 func updateFunding(
-	exchange *MatchedExchange,
+	exchange *domain.MatchedExchange,
 	pair domain.FilteredPair,
 ) {
 	if !pair.FutureStatus.Available {
@@ -301,28 +268,3 @@ func addCoin(
 	}
 	sets[exchange][coin] = struct{}{}
 }
-
-func setsToSlices(
-	sets map[core_config.ExchangeName]map[string]struct{},
-) map[core_config.ExchangeName][]string {
-	result := make(map[core_config.ExchangeName][]string, len(sets))
-
-	for exchange, coins := range sets {
-		for coin := range coins {
-			result[exchange] = append(result[exchange], coin)
-		}
-	}
-
-	return result
-}
-
-func NewMatches() *MatchStore {
-	s := &MatchStore{}
-	empty := MatchResult{}
-	s.cur.Store(&empty)
-	return s
-}
-
-func (s *MatchStore) Get() *MatchResult { return s.cur.Load() }
-
-func (s *MatchStore) publish(snap *MatchResult) { s.cur.Store(snap) }
