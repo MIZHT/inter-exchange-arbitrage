@@ -22,9 +22,22 @@ type ExchangeAdapter interface {
 	// if FuturesNextFundingTime > 0 && (FuturesFundingRate == "")
 	//
 
-	//SubscribeOrderBook(context.Context, string) error
-	//UnsubscribeOrderBook(context.Context, string) error
+	StartOrderBookStream(context.Context, OrderBookHandlers) error
 
-	//Start(ctx context.Context) error
-	//Stop(ctx context.Context) error
+	SubscribeSpotOrderBooks(context.Context, []string) error
+	UnsubscribeSpotOrderBooks(context.Context, []string) error
+
+	SubscribeFuturesOrderBooks(context.Context, []string) error
+	UnsubscribeFuturesOrderBooks(context.Context, []string) error
+}
+
+// OrderBookSubscriptionReconciler replaces the current subscriptions with the
+// matcher result in one operation.
+type OrderBookSubscriptionReconciler interface {
+	ReconcileOrderBooks(context.Context, []string, []string) error
+}
+
+type OrderBookHandlers struct {
+	Spot    func(domain.OrderBook)
+	Futures func(domain.OrderBook)
 }
