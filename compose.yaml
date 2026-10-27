@@ -1,0 +1,26 @@
+services:
+  market-data:
+    build: .
+    image: inter-exchange-arbitrage:local
+    command: ["./market-data"]
+    env_file:
+      - .env
+    environment:
+      MARKET_SNAPSHOT_URL: http://snapshot-service:8081/internal/v1/snapshots
+    volumes:
+      - ./proxies.txt:/app/proxies.txt:ro
+      - ./data:/app/data
+      - ./out/logs:/app/out/logs
+    depends_on:
+      - snapshot-service
+    restart: unless-stopped
+
+  snapshot-service:
+    build: .
+    image: inter-exchange-arbitrage:local
+    command: ["./snapshot-service"]
+    environment:
+      SNAPSHOT_LISTEN_ADDR: ":8081"
+    expose:
+      - "8081"
+    restart: unless-stopped
