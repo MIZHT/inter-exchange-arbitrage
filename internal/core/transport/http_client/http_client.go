@@ -99,7 +99,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 	var resp *http.Response
 	var err error
 
-	for attempt := 0; attempt <= c.maxRetries; attempt++ {
+	for attempt := 1; attempt <= c.maxRetries; attempt++ {
 		delay := c.retryDelay * time.Duration(1<<uint(attempt+2))
 		delay += time.Duration(time.Now().UnixNano() % int64(delay/2))
 		select {

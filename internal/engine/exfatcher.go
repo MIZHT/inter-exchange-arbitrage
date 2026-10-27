@@ -29,11 +29,13 @@ type ExchangeSnapshot struct {
 
 func NewExchangeRunner(
 	adapter exchange.ExchangeAdapter,
+	name core_config.ExchangeName,
 	logger *core_logger.Logger,
 ) *ExchangeRunner {
 	return &ExchangeRunner{
-		Adapter: adapter,
-		logger:  logger,
+		Adapter:      adapter,
+		exchangeName: name,
+		logger:       logger,
 	}
 }
 
@@ -67,6 +69,9 @@ func (r *ExchangeRunner) RunExFetch(ctx context.Context) {
 	}()
 
 	wg.Wait()
+
+	r.filterPairs(currencies, markets)
+
 	if currenciesErr != nil || marketsErr != nil {
 		if currenciesErr != nil {
 			r.logFetchFailure(ctx, r.exchangeName, "currencies", currenciesErr)
@@ -77,7 +82,6 @@ func (r *ExchangeRunner) RunExFetch(ctx context.Context) {
 		return
 	}
 
-	r.filterPairs(currencies, markets)
 }
 
 func (r *ExchangeRunner) logFetchFailure(
